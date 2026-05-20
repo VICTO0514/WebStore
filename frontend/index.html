@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{SHOP_NAME}} — Fresh groceries delivered</title>
+    <meta
+      name="description"
+      content="Order groceries, vegetables, dairy & household essentials with AI-assisted search and 10 km delivery."
+    />
+    <meta property="og:title" content="{{SHOP_NAME}} — Grocery delivery" />
+    <meta property="og:type" content="website" />
+    <meta property="og:description" content="Fresh · Fast · Within 10 km" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "GroceryStore",
+        "name": "{{SHOP_NAME}}",
+        "description": "Online grocery ordering with local delivery",
+        "areaServed": "10 km radius"
+      }
+    </script>
+  </head>
+  <body>
+    <div class="bg-blobs" aria-hidden="true">
+      <div class="blob blob--a"></div>
+      <div class="blob blob--b"></div>
+      <div class="blob blob--c"></div>
+    </div>
+    <div id="cursor-glow" aria-hidden="true"></div>
+
+    <div data-include="header"></div>
+
+    <main class="container">
+      <section class="hero">
+        <div class="hero-copy" data-aos="fade-right">
+          <h1 data-i18n="hero_title">Farm-fresh groceries to your door</h1>
+          <p data-i18n="hero_sub">Delivered within 10 km · Trusted local store</p>
+          <div class="trust-row">
+            <span class="trust-pill" data-i18n="fresh">Fresh</span>
+            <span class="trust-pill" data-i18n="fast">Fast delivery</span>
+            <span class="trust-pill" data-i18n="trust_pay">Secure pay</span>
+          </div>
+          <div style="margin-top: 1.75rem; display: flex; gap: 0.75rem; flex-wrap: wrap">
+            <a href="products.html" class="btn btn--primary magnetic-wrap" data-i18n="shop_cta">Shop now</a>
+            <a href="contact.html" class="btn btn--ghost magnetic-wrap">WhatsApp us</a>
+          </div>
+        </div>
+        <div class="hero-visual" data-aos="fade-left">
+          <canvas
+            id="particle-canvas"
+            style="width: 100%; height: 320px; border-radius: 28px"
+            aria-hidden="true"
+          ></canvas>
+          <div class="hero-orbit">
+            <div class="hero-card">
+              <div class="hero-float">🍅</div>
+              <div class="hero-float">🥛</div>
+              <div class="hero-float">🍚</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-aos="fade-up">
+        <h2 class="section-title">Featured picks</h2>
+        <div id="featured-grid" class="grid-products"></div>
+      </section>
+
+      <section data-aos="fade-up" style="margin-top: 3rem">
+        <div class="glass-panel" style="padding: 1.5rem; border-radius: var(--radius)">
+          <h3 style="margin-top: 0">AI smart search</h3>
+          <p class="muted">Try “breakfast items”, “soap under ₹50”, or “milk and curd”.</p>
+          <div class="search-live">
+            <input type="search" id="nl-query" placeholder="Ask in plain English or Tamil…" />
+            <button type="button" class="btn btn--accent" id="nl-btn">Search</button>
+          </div>
+          <div id="nl-results" class="grid-products" style="margin-top: 1rem"></div>
+        </div>
+      </section>
+    </main>
+
+    <div data-include="footer"></div>
+
+    <a
+      id="whatsapp-float"
+      class="whatsapp-float"
+      href="https://wa.me/"
+      target="_blank"
+      rel="noopener"
+      aria-label="WhatsApp"
+      >💬</a
+    >
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+    <script src="https://unpkg.com/three@0.161.0/build/three.min.js"></script>
+    <!-- Optional bootstrap (before config.js): API defaults to http://localhost:8080 in assets/js/config.js -->
+    <!--
+    <script>
+      window.__API_BASE__ = 'http://localhost:8080';
+      window.__GA_ID__ = 'G-XXXXXXXXXX';
+    </script>
+    -->
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/ui.js"></script>
+    <script src="assets/js/i18n.js"></script>
+    <script src="assets/js/layout.js"></script>
+    <script src="assets/js/cursor-three.js"></script>
+    <script src="assets/js/home.js"></script>
+    <script>
+      document.getElementById('nl-btn').addEventListener('click', async () => {
+        const q = document.getElementById('nl-query').value.trim();
+        const root = document.getElementById('nl-results');
+        if (!q) return;
+        root.innerHTML = '';
+        UI.skeleton(root, 3);
+        try {
+          const items = await api.nlSearch(q);
+          root.innerHTML = '';
+          items.forEach((p) => {
+            const c = document.createElement('div');
+            c.innerHTML = `<article class="card-product">
+              <a href="product-details.html?id=${p.id}"><img src="${p.thumbnailUrl || p.imageUrl}" alt="" loading="lazy" width="220" height="220"/></a>
+              <h4 style="margin:0.5rem 0 0">${p.name}</h4>
+              <span class="price">${UI.formatMoney(p.effectivePrice ?? p.price)}</span>
+            </article>`;
+            root.appendChild(c.firstElementChild);
+          });
+          if (!items.length) root.innerHTML = '<p class="muted">No matches — try another phrase.</p>';
+        } catch (e) {
+          root.innerHTML = `<p class="muted">${e.message}</p>`;
+        }
+      });
+      window.addEventListener('load', () => {
+        AOS.init({ duration: 800, once: true });
+        if (window.gsap) {
+          gsap.from('.hero-copy h1', { y: 40, opacity: 0, duration: 1, ease: 'power3.out' });
+          gsap.from('.hero-copy p', { y: 20, opacity: 0, duration: 0.9, delay: 0.15, ease: 'power2.out' });
+        }
+      });
+      window.addEventListener('cart-updated', () => {
+        const el = document.getElementById('cart-count');
+        if (el)
+          api.cart().then((c) => {
+            el.textContent = c.items?.length || 0;
+          }).catch(()=>{});
+      });
+    </script>
+  </body>
+</html>

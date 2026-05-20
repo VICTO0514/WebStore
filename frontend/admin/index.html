@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin — {{SHOP_NAME}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/css/main.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1 class="section-title">Admin dashboard</h1>
+      <p class="muted">Login as the admin user from <code>backend/.env</code> (<code>ADMIN_EMAIL</code>; default <code>admin@example.local</code>) then open this page from the same browser session (JWT in localStorage).</p>
+      <pre id="dash" class="glass-panel" style="padding: 1rem; border-radius: var(--radius); overflow: auto"></pre>
+      <h2 class="section-title">Recent orders</h2>
+      <pre id="orders" class="glass-panel" style="padding: 1rem; border-radius: var(--radius); overflow: auto"></pre>
+      <p><a href="../index.html">← Storefront</a></p>
+    </main>
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <script>
+      async function load() {
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+          location.href = '../login.html';
+          return;
+        }
+        try {
+          const d = await fetch(api.base() + '/api/v1/admin/dashboard', {
+            headers: { Authorization: 'Bearer ' + token },
+          }).then((r) => {
+            if (!r.ok) throw new Error('Admin only — login with admin account');
+            return r.json();
+          });
+          document.getElementById('dash').textContent = JSON.stringify(d, null, 2);
+          const o = await fetch(api.base() + '/api/v1/admin/orders?page=0&size=5', {
+            headers: { Authorization: 'Bearer ' + token },
+          }).then((r) => r.json());
+          document.getElementById('orders').textContent = JSON.stringify(o, null, 2);
+        } catch (e) {
+          document.getElementById('dash').textContent = e.message;
+        }
+      }
+      load();
+    </script>
+  </body>
+</html>

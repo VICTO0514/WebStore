@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Product — {{SHOP_NAME}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+  </head>
+  <body>
+    <div class="bg-blobs"><div class="blob blob--a"></div></div>
+    <div data-include="header"></div>
+    <main class="container" id="root">
+      <p class="muted">Loading…</p>
+    </main>
+    <div data-include="footer"></div>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/ui.js"></script>
+    <script src="assets/js/i18n.js"></script>
+    <script src="assets/js/layout.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script>
+      const id = new URLSearchParams(location.search).get('id');
+      async function run() {
+        const root = document.getElementById('root');
+        if (!id) {
+          root.innerHTML = '<p>Missing product id</p>';
+          return;
+        }
+        try {
+          const p = await api.product(id);
+          const imgs = [p.largeUrl, p.mediumUrl, p.thumbnailUrl, p.imageUrl].filter(Boolean);
+          const slides = imgs.length
+            ? imgs
+            : ['https://images.unsplash.com/photo-1542838132-92c53300491e?w=800'];
+          root.innerHTML = `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start" class="pd-grid">
+            <div class="swiper pd-swiper glass-panel" style="padding:1rem;border-radius:var(--radius)">
+              <div class="swiper-wrapper">
+                ${slides
+                  .map(
+                    (u) =>
+                      `<div class="swiper-slide"><img src="${u}" alt="${p.name}" style="width:100%;border-radius:16px;aspect-ratio:1;object-fit:cover"/></div>`
+                  )
+                  .join('')}
+              </div>
+              <div class="swiper-pagination"></div>
+            </div>
+            <div>
+              <p class="muted" style="margin:0">${p.categoryName || ''}</p>
+              <h1 style="margin:0.35rem 0 1rem">${p.name}</h1>
+              <p class="muted">${p.description || ''}</p>
+              <div style="margin:1.25rem 0;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+                <span class="price" style="font-size:1.5rem">${UI.formatMoney(p.effectivePrice ?? p.price)}</span>
+                <span class="muted">${p.unit}</span>
+              </div>
+              <button type="button" class="btn btn--primary" id="add">Add to cart</button>
+              <a href="reviews.html?product=${p.id}" class="btn btn--ghost" style="margin-left:0.5rem">Reviews</a>
+              <div class="glass-panel" style="margin-top:2rem;padding:1rem;border-radius:var(--radius)">
+                <strong>Frequently bought together</strong>
+                <div id="fbt" class="grid-products" style="margin-top:0.75rem"></div>
+              </div>
+            </div>
+          </div>`;
+          new Swiper('.pd-swiper', { pagination: { el: '.swiper-pagination' }, loop: slides.length > 1 });
+          document.getElementById('add').onclick = async () => {
+            if (!api.token()) {
+              location.href = 'login.html';
+              return;
+            }
+            await api.cartAdd(p.id, 1);
+            UI.toast('Added to cart');
+            window.dispatchEvent(new Event('cart-updated'));
+          };
+          const fbt = await api.fbt(p.id);
+          const grid = document.getElementById('fbt');
+          fbt.forEach((x) => {
+            const d = document.createElement('div');
+            d.className = 'card-product';
+            d.innerHTML = `<a href="product-details.html?id=${x.id}"><img src="${x.thumbnailUrl || x.imageUrl}" alt="" loading="lazy" width="120" height="120"/></a><p style="margin:0.35rem 0 0;font-size:0.85rem">${x.name}</p>`;
+            grid.appendChild(d);
+          });
+        } catch (e) {
+          root.innerHTML = `<p>${e.message}</p>`;
+        }
+      }
+      window.addEventListener('DOMContentLoaded', run);
+    </script>
+    <style>
+      @media (max-width: 900px) {
+        .pd-grid {
+          grid-template-columns: 1fr !important;
+        }
+      }
+    </style>
+  </body>
+</html>

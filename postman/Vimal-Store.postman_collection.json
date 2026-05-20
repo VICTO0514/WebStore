@@ -1,0 +1,42 @@
+{
+  "info": {
+    "name": "Vimal Store API",
+    "description": "Login body must match ADMIN_EMAIL / ADMIN_PASSWORD from backend/.env (defaults in backend/.env.example). API base default port 8080. Razorpay / online payment verify is not implemented (POST /payments/razorpay/verify returns 501); use COD or STORE_QR at checkout.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "base", "value": "http://localhost:8080" }],
+  "item": [
+    {
+      "name": "Auth Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@example.local\",\n  \"password\": \"ChangeMe_LocalDev_Only\"\n}"
+        },
+        "url": "{{base}}/api/v1/auth/login"
+      }
+    },
+    {
+      "name": "Products list",
+      "request": { "method": "GET", "url": "{{base}}/api/v1/products?page=0&size=12" }
+    },
+    {
+      "name": "Delivery check",
+      "request": { "method": "GET", "url": "{{base}}/api/v1/delivery/check?lat=13.0827&lng=80.2707" }
+    },
+    {
+      "name": "AI nl-search",
+      "request": { "method": "GET", "url": "{{base}}/api/v1/ai/nl-search?q=milk%20and%20curd" }
+    },
+    {
+      "name": "Admin dashboard",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{base}}/api/v1/admin/dashboard"
+      }
+    }
+  ]
+}

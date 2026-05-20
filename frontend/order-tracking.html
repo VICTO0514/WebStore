@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Orders — {{SHOP_NAME}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+  </head>
+  <body>
+    <div data-include="header"></div>
+    <main class="container">
+      <h1 class="section-title">Your orders</h1>
+      <div id="list" class="glass-panel" style="padding: 1.25rem; border-radius: var(--radius)"><p class="muted">Loading…</p></div>
+    </main>
+    <div data-include="footer"></div>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/ui.js"></script>
+    <script src="assets/js/layout.js"></script>
+    <script>
+      window.addEventListener('DOMContentLoaded', async () => {
+        if (!api.token()) {
+          location.href = 'login.html';
+          return;
+        }
+        const root = document.getElementById('list');
+        try {
+          const data = await api.orders(0);
+          const rows = (data.content || []).map(
+            (o) =>
+              `<div style="padding:0.75rem 0;border-bottom:1px solid rgba(148,163,184,.2)"><strong>${o.orderNumber}</strong> · ${o.orderStatus} · ${UI.formatMoney(o.total)}<br/><span class="muted">${new Date(o.createdAt).toLocaleString()}</span></div>`
+          );
+          root.innerHTML = rows.join('') || '<p class="muted">No orders yet.</p>';
+        } catch (e) {
+          root.innerHTML = `<p>${e.message}</p>`;
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reviews — {{SHOP_NAME}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+  </head>
+  <body>
+    <div data-include="header"></div>
+    <main class="container">
+      <h1 class="section-title">Customer voices</h1>
+      <p class="muted">Reviews are moderated for authenticity.</p>
+      <div id="rev" class="grid-products"></div>
+    </main>
+    <div data-include="footer"></div>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/ui.js"></script>
+    <script src="assets/js/layout.js"></script>
+    <script>
+      const pid = new URLSearchParams(location.search).get('product');
+      window.addEventListener('DOMContentLoaded', async () => {
+        const root = document.getElementById('rev');
+        if (!pid) {
+          root.innerHTML = '<p class="muted">Open a product page and tap Reviews, or browse products.</p>';
+          return;
+        }
+        const page = await api.reviews(pid);
+        root.innerHTML = (page.content || [])
+          .map(
+            (r) =>
+              `<article class="card-product"><strong>★ ${r.rating}</strong><p>${r.comment || ''}</p><span class="muted">${r.authorName}</span></article>`
+          )
+          .join('');
+      });
+    </script>
+  </body>
+</html>

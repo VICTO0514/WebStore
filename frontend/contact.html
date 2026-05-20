@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contact — {{SHOP_NAME}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+  </head>
+  <body>
+    <div data-include="header"></div>
+    <main class="container glass-panel" style="padding: 2rem; border-radius: var(--radius); margin-top: 1rem">
+      <h1>Contact</h1>
+      <p id="contact-lines" class="muted">Loading…</p>
+    </main>
+    <div data-include="footer"></div>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/ui.js"></script>
+    <script src="assets/js/layout.js"></script>
+    <script>
+      api.settings().then((s) => {
+        document.getElementById('contact-lines').innerHTML = `
+          <strong>${s['shop.name']}</strong><br/>
+          ${s['shop.address']}<br/>
+          Phone: <a href="tel:${s['shop.phone']}">${s['shop.phone']}</a><br/>
+          Email: <a href="mailto:${s['shop.email']}">${s['shop.email']}</a>`;
+      });
+    </script>
+  </body>
+</html>

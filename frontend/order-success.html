@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Order placed — {{SHOP_NAME}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+  </head>
+  <body>
+    <div data-include="header"></div>
+    <main class="container">
+      <div class="glass-panel" style="padding: 2rem; border-radius: var(--radius); text-align: center">
+        <h1 style="margin-top: 0">Thank you!</h1>
+        <p class="muted">Your order <strong id="on"></strong> is confirmed.</p>
+        <a href="order-tracking.html" class="btn btn--primary">Track order</a>
+      </div>
+    </main>
+    <div data-include="footer"></div>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/ui.js"></script>
+    <script src="assets/js/layout.js"></script>
+    <script>
+      const order = new URLSearchParams(location.search).get('order');
+      document.getElementById('on').textContent = order || '';
+      if (window.confetti) confetti({ particleCount: 140, spread: 75, origin: { y: 0.6 } });
+    </script>
+  </body>
+</html>

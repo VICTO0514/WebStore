@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cart — {{SHOP_NAME}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+  </head>
+  <body>
+    <div data-include="header"></div>
+    <main class="container">
+      <h1 class="section-title">Your cart</h1>
+      <div id="cart-root" class="glass-panel" style="padding: 1.25rem; border-radius: var(--radius)">
+        <p class="muted">Loading…</p>
+      </div>
+      <div style="margin-top: 1.25rem">
+        <a href="checkout.html" class="btn btn--primary" id="go-checkout">Checkout</a>
+        <a href="products.html" class="btn btn--ghost">Continue shopping</a>
+      </div>
+    </main>
+    <div data-include="footer"></div>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/ui.js"></script>
+    <script src="assets/js/i18n.js"></script>
+    <script src="assets/js/layout.js"></script>
+    <script>
+      async function load() {
+        if (!api.token()) {
+          location.href = 'login.html';
+          return;
+        }
+        const root = document.getElementById('cart-root');
+        try {
+          const c = await api.cart();
+          if (!c.items || !c.items.length) {
+            root.innerHTML = '<p class="muted">Your cart is empty.</p>';
+            document.getElementById('go-checkout').style.display = 'none';
+            return;
+          }
+          root.innerHTML =
+            '<table style="width:100%;border-collapse:collapse"><thead><tr><th align="left">Item</th><th>Qty</th><th>Line</th></tr></thead><tbody>' +
+            c.items
+              .map(
+                (l) => `<tr style="border-bottom:1px solid rgba(148,163,184,.25)">
+              <td style="padding:0.65rem 0">${l.product.name}</td>
+              <td align="center">${l.quantity}</td>
+              <td align="right">${UI.formatMoney(l.lineTotal)}</td>
+            </tr>`
+              )
+              .join('') +
+            `</tbody></table><p style="text-align:right;font-weight:800;margin-top:1rem">Subtotal: ${UI.formatMoney(c.subtotal)}</p>`;
+        } catch (e) {
+          root.innerHTML = `<p>${e.message}</p>`;
+        }
+      }
+      window.addEventListener('DOMContentLoaded', load);
+    </script>
+  </body>
+</html>

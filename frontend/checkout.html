@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Checkout — {{SHOP_NAME}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+  </head>
+  <body>
+    <div data-include="header"></div>
+    <main class="container">
+      <h1 class="section-title">Checkout</h1>
+      <div class="glass-panel" style="padding: 1.25rem; border-radius: var(--radius); margin-bottom: 1rem">
+        <h3 style="margin-top: 0">1. Delivery address</h3>
+        <p class="muted">Pick on map or use saved address. Must be within 10 km.</p>
+        <div id="map" style="height: 260px; border-radius: 16px; margin: 0.75rem 0"></div>
+        <div style="display: grid; gap: 0.5rem; max-width: 420px">
+          <input id="line1" placeholder="Address line" />
+          <input id="city" placeholder="City" />
+          <input id="lat" type="number" step="any" placeholder="Latitude" />
+          <input id="lng" type="number" step="any" placeholder="Longitude" />
+          <button type="button" class="btn btn--ghost btn--sm" id="save-addr">Save & use this address</button>
+        </div>
+        <div id="addr-status" class="muted" style="margin-top: 0.5rem"></div>
+        <select id="saved-addr" style="margin-top: 1rem; width: 100%; padding: 0.5rem"></select>
+      </div>
+
+      <div class="glass-panel" style="padding: 1.25rem; border-radius: var(--radius); margin-bottom: 1rem">
+        <h3>2. Coupon</h3>
+        <input id="coupon" placeholder="WELCOME10" style="padding: 0.5rem; width: 220px" />
+        <button type="button" class="btn btn--ghost btn--sm" id="preview-btn">Update totals</button>
+      </div>
+
+      <div class="glass-panel" style="padding: 1.25rem; border-radius: var(--radius); margin-bottom: 1rem">
+        <h3>3. Payment</h3>
+        <label><input type="radio" name="pay" value="COD" checked /> Cash on Delivery</label><br />
+        <label><input type="radio" name="pay" value="STORE_QR" /> Pay via store QR (scan — pay in your bank/UPI app)</label>
+        <div id="qr-panel" style="display: none; margin-top: 1rem; padding: 1rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08)">
+          <p class="muted" style="margin-top: 0">
+            Scan with your UPI app if you pay before delivery. No online checkout — payment happens outside this website.
+          </p>
+          <img
+            src="assets/store-payment-qr.png"
+            alt="Store payment QR placeholder — replace assets/store-payment-qr.png with your real QR"
+            width="220"
+            height="220"
+            style="display: block; margin: 0.5rem auto; border-radius: 8px"
+          />
+        </div>
+        <pre id="totals" class="muted" style="white-space: pre-wrap"></pre>
+        <button type="button" class="btn btn--primary" id="place">Place order</button>
+      </div>
+    </main>
+    <div data-include="footer"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/ui.js"></script>
+    <script src="assets/js/layout.js"></script>
+    <script>
+      let selectedAddressId = null;
+      let mapMarker = null;
+      window.addEventListener('DOMContentLoaded', async () => {
+        if (!api.token()) {
+          location.href = 'login.html';
+          return;
+        }
+        const settings = await api.settings();
+        const shopLat = parseFloat(settings['shop.latitude'] || '13.0827');
+        const shopLng = parseFloat(settings['shop.longitude'] || '80.2707');
+
+        const map = L.map('map').setView([shopLat, shopLng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap',
+        }).addTo(map);
+        mapMarker = L.marker([shopLat, shopLng], { draggable: true }).addTo(map);
+        mapMarker.on('dragend', () => {
+          const p = mapMarker.getLatLng();
+          document.getElementById('lat').value = p.lat.toFixed(6);
+          document.getElementById('lng').value = p.lng.toFixed(6);
+          checkRadius(p.lat, p.lng);
+        });
+
+        async function checkRadius(lat, lng) {
+          const r = await api.deliveryCheck(lat, lng);
+          const el = document.getElementById('addr-status');
+          if (!r.eligible) {
+            el.textContent = (window.I18n && I18n.t('radius_warn')) || 'Outside 10 km delivery radius.';
+            el.style.color = 'tomato';
+          } else {
+            el.textContent = `Inside radius · ${r.distanceKm.toFixed(2)} km from store`;
+            el.style.color = '';
+          }
+        }
+
+        document.getElementById('save-addr').onclick = async () => {
+          try {
+            const body = {
+              label: 'Home',
+              line1: document.getElementById('line1').value || 'Delivery location',
+              line2: '',
+              city: document.getElementById('city').value || 'City',
+              state: '',
+              postalCode: '',
+              latitude: parseFloat(document.getElementById('lat').value),
+              longitude: parseFloat(document.getElementById('lng').value),
+              defaultAddress: true,
+            };
+            const a = await api.addressCreate(body);
+            selectedAddressId = a.id;
+            UI.toast('Address saved');
+            await refreshSaved();
+            await preview();
+          } catch (e) {
+            UI.toast(e.message, 'error');
+          }
+        };
+
+        async function refreshSaved() {
+          const list = await api.addresses();
+          const sel = document.getElementById('saved-addr');
+          sel.innerHTML = list.map((a) => `<option value="${a.id}">${a.line1}, ${a.city}</option>`).join('');
+          if (list.length) selectedAddressId = list[0].id;
+          sel.onchange = () => {
+            selectedAddressId = sel.value;
+            preview();
+          };
+        }
+        await refreshSaved();
+
+        function syncPaymentUi() {
+          const pay = document.querySelector('input[name="pay"]:checked').value;
+          document.getElementById('qr-panel').style.display = pay === 'STORE_QR' ? 'block' : 'none';
+        }
+        document.querySelectorAll('input[name="pay"]').forEach((el) => el.addEventListener('change', syncPaymentUi));
+        syncPaymentUi();
+
+        document.getElementById('preview-btn').onclick = preview;
+        async function preview() {
+          if (!selectedAddressId) {
+            UI.toast('Select or save address', 'error');
+            return;
+          }
+          try {
+            const p = await api.checkoutPreview(selectedAddressId, document.getElementById('coupon').value);
+            document.getElementById('totals').textContent = JSON.stringify(p, null, 2);
+            if (!p.eligible) UI.toast('Address outside delivery zone', 'error');
+          } catch (e) {
+            UI.toast(e.message, 'error');
+          }
+        }
+
+        document.getElementById('place').onclick = async () => {
+          const pay = document.querySelector('input[name="pay"]:checked').value;
+          try {
+            const res = await api.placeOrder({
+              addressId: selectedAddressId,
+              paymentMethod: pay,
+              couponCode: document.getElementById('coupon').value || null,
+              notes: '',
+            });
+            location.href = 'order-success.html?order=' + encodeURIComponent(res.orderNumber);
+          } catch (e) {
+            UI.toast(e.message, 'error');
+          }
+        };
+      });
+    </script>
+  </body>
+</html>
